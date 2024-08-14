@@ -1,0 +1,22 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="stylesheet" href="style.css">
+    <title>Upload Image for OCR</title>
+</head>
+<body>
+    <h1>Upload Image to Convert to DOCX</h1>
+    <form action="/upload" method="POST" enctype="multipart/form-data">
+        <input type="file" name="image" accept="image/*" required>
+        <br>
+        <br>
+        <button type="submit">Upload and Convert</button>
+    </form>
+    <% if (docxFile) { %>
+        <h2>Download your DOCX file:</h2>
+        <a href="/download/<%= docxFile %>">Download DOCX</a>
+    <% } %>
+</body>
+</html>
