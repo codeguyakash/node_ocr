@@ -10,8 +10,7 @@ require('dotenv').config();
 const app = express();
 const upload = multer({ dest: 'uploads/' });
 const PORT = process.env.PORT || 3000;
-const file = path.join(__dirname, 'credentials.json');
-console.log(file)
+const file = path.join(__dirname, 'codeguyakash-dev-56489cba98da.json');
 
 const client = new vision.ImageAnnotatorClient({
     keyFilename: file,
@@ -28,20 +27,36 @@ app.post('/upload', upload.single('image'), async (req, res) => {
     const outputFileName = `File_${Date.now()}.docx`;
 
     try {
-        // Perform text detection using Google Cloud Vision
         const [result] = await client.textDetection(imagePath);
         const detections = result.textAnnotations;
         const text = detections[0].description;
 
-        // Prepare the extracted text for the DOCX file
         const lines = text.split('\n').map(line => {
+            const isBullet = line.trim().startsWith('•') || line.trim().startsWith('-') || line.trim().startsWith('*');
+            const isIndented = line.startsWith('    ') || line.startsWith('\t');
+
             return new Paragraph({
-                children: [new TextRun({ text: line, size: 24 })],
+                children: [
+                    new TextRun({
+                        text: line.trim(),
+                        bold: isBullet,
+                        size: 24,
+                    }),
+                ],
+                bullet: isBullet ? { level: 0 } : undefined,
+                indent: isIndented ? { left: 720 } : undefined,
             });
         });
 
-        // Create and save the DOCX file
-        const doc = new Document({ sections: [{ properties: {}, children: lines }] });
+        const doc = new Document({
+            sections: [
+                {
+                    properties: {},
+                    children: lines,
+                },
+            ],
+        });
+
         const buffer = await Packer.toBuffer(doc);
         const docxPath = path.join('uploads', outputFileName);
         fs.writeFileSync(docxPath, buffer);
@@ -60,5 +75,5 @@ app.get('/download/:filename', (req, res) => {
 });
 
 app.listen(PORT, () => {
-    console.log(`Server started on http://localhost:${PORT}`);
+    console.log(`Server started with google on http://localhost:${PORT}`);
 });
