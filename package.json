@@ -5,9 +5,10 @@
   "scripts": {
     "start": "node index.js",
     "dev": "nodemon index.js",
-    "aws": "node aws.js",
-    "aws-dev": "nodemon aws.js",
-    "azure": "nodemon azure.js"
+    "aws": "nodemon aws.js",
+    "azure": "nodemon azure.js",
+    "google": "nodemon google.js",
+    "adobe": "nodemon adobe.js"
   },
   "keywords": [],
   "author": "",

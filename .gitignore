@@ -2,3 +2,6 @@ node_modules
 .env
 secrets.csv
 credentials.json
+config.js
+codeguyakash-dev-56489cba98da.json
+your-google-cloud-keyfile.json
