@@ -22,12 +22,13 @@ function createParagraphsFromText(text) {
     return lines.map(line => {
         const trimmedLine = line.trim();
         const isBullet = trimmedLine.startsWith('•') || trimmedLine.startsWith('-') || trimmedLine.startsWith('*') || /^\d+\./.test(trimmedLine);
-        const isBold = trimmedLine.toUpperCase() === trimmedLine;  // Simple bold detection
+        const isBold = trimmedLine.toUpperCase() === trimmedLine;
         const isIndented = line.startsWith('    ') || line.startsWith('\t');
-        const isItalic = trimmedLine.startsWith('_') && trimmedLine.endsWith('_');  // Simple italic detection
+        const isItalic = trimmedLine.startsWith('_') && trimmedLine.endsWith('_');
 
         const textRun = new TextRun({
-            text: trimmedLine.replace(/^[-•*]\s*/, ''),  // Remove bullet symbols
+            text: trimmedLine.replace(/^[-•*]\s*/, ''),
+
             bold: isBold,
             italics: isItalic,
             size: 24,
@@ -74,8 +75,6 @@ app.post('/upload', upload.single('image'), async (req, res) => {
         }
 
         fs.writeFileSync(docxPath, buffer);
-
-        // Delete the uploaded image after processing
         fs.unlinkSync(imagePath);
 
         res.render('index', { docxFile: outputFileName });
