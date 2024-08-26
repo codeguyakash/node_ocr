@@ -10,10 +10,21 @@ require('dotenv').config();
 const app = express();
 const upload = multer({ dest: 'uploads/' });
 const PORT = process.env.PORT || 3000;
+/*
+const client = new vision.ImageAnnotatorClient({
+    credentials: {
+        client_email: process.env.CLIENT_EMAIL,
+        private_key: process.env.PRIVATE_KEY.replace(/\\n/g, '\n'),
+    },
+    projectId: process.env.PROJECT_ID,
+});
+*/
 
 const client = new vision.ImageAnnotatorClient({
-    keyFilename: path.join(__dirname, 'your-google-cloud-keyfile.json'),
+    keyFilename: path.join(__dirname, 'google_cloud_keyfile.json'),
 });
+
+
 
 app.set('view engine', 'ejs');
 
