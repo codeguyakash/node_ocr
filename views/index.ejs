@@ -3,7 +3,7 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Upload Image for OCR</title>
+    <title>OCR-(NodeJS)</title>
     <style>
       * {
         font-family: Verdana, Geneva, Tahoma, sans-serif;
@@ -20,8 +20,12 @@
     </form>
     <% if (docxFile) { %>
     <h2>Download your DOCX file:</h2>
-    <a href="/download/<%= docxFile %>">Download DOCX</a>
+    <a href="/download/<%= docxFile %>"><%= docxFile %></a>
     <% } %>
+    <br />
+    <br />
+    <br />
+    <br />
     <a href="/">go back</a>
   </body>
 </html>

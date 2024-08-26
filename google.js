@@ -59,7 +59,8 @@ app.get('/', (req, res) => {
 
 app.post('/upload', upload.single('image'), async (req, res) => {
     const imagePath = req.file.path;
-    const outputFileName = `File_${Date.now()}.docx`;
+    const randomNumber = Math.floor(Math.random() * 1000000);
+    const outputFileName = `File:${randomNumber}.docx`;
 
     try {
         const [result] = await client.textDetection(imagePath);
@@ -87,7 +88,8 @@ app.post('/upload', upload.single('image'), async (req, res) => {
 
         fs.writeFileSync(docxPath, buffer);
         fs.unlinkSync(imagePath);
-
+        
+        console.log(`Extracting Done: ${outputFileName}`);
         res.render('index', { docxFile: outputFileName });
     } catch (error) {
         console.error('Error extracting text:', error);
