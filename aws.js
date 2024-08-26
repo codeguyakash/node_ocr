@@ -104,6 +104,7 @@ app.post('/upload', upload.single('image'), async (req, res) => {
     }
 });
 
+
 app.get('/download/:filename', (req, res) => {
     const filename = req.params.filename;
     const filePath = path.join(__dirname, 'output', filename);
@@ -111,5 +112,5 @@ app.get('/download/:filename', (req, res) => {
 });
 
 app.listen(PORT, () => {
-    console.log(`Server started on http://localhost:${PORT}`);
+    console.log(`Server with AWS http://localhost:${PORT}`);
 });

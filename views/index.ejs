@@ -3,29 +3,41 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>OCR-(NodeJS)</title>
+    <title>Upload Image for OCR</title>
     <style>
       * {
         font-family: Verdana, Geneva, Tahoma, sans-serif;
       }
+      button,
+      input {
+        cursor: pointer;
+        font-size: 1.2rem;
+      }
+      body {
+        margin: 0 100px;
+      }
+      a{
+        text-decoration: none;
+      }
     </style>
   </head>
   <body>
-    <h1>Upload Image to Convert to DOCX</h1>
+    <h1>Upload Image</h1>
+    <h3>Convert to DOCX</h3>
+    <hr />
+    <br />
     <form action="/upload" method="POST" enctype="multipart/form-data">
       <input type="file" name="image" accept="image/*" required />
       <br />
       <br />
-      <button type="submit">Upload and Convert</button>
+      <button type="submit">Convert</button>
     </form>
     <% if (docxFile) { %>
     <h2>Download your DOCX file:</h2>
-    <a href="/download/<%= docxFile %>"><%= docxFile %></a>
+    <a href="/download/<%= docxFile %>">👉 <%= docxFile %></a>
     <% } %>
     <br />
-    <br />
-    <br />
-    <br />
-    <a href="/">go back</a>
+    <hr />
+    <a href="/">back</a>
   </body>
 </html>
