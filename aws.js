@@ -4,14 +4,14 @@ const path = require('path');
 const fs = require('fs');
 const { TextractClient, DetectDocumentTextCommand } = require('@aws-sdk/client-textract');
 const { Document, Packer, Paragraph, TextRun } = require('docx');
-
 require('dotenv').config();
-const PORT = process.env.PORT || 3000;
+
 const app = express();
 const upload = multer({ dest: 'uploads/' });
+const PORT = process.env.PORT || 3000;
 
-const client = new TextractClient({
-    region: process.env.AWS_REGION || 'us-west-2',
+const textractClient = new TextractClient({
+    region: process.env.AWS_REGION,
     credentials: {
         accessKeyId: process.env.AWS_ACCESS_KEY_ID,
         secretAccessKey: process.env.AWS_SECRET_ACCESS_KEY,
@@ -19,68 +19,94 @@ const client = new TextractClient({
 });
 
 app.set('view engine', 'ejs');
-app.use(express.static('uploads'));
+
+function formatText(inputText) {
+    return inputText.replace(/(\d+\.|\(\w+\))\s*\n\s*/g, '$1 ')
+        .replace(/\n(?=[a-zA-Z])/g, ' ')
+        .replace(/([.!?])\s*\n\s*/g, '$1\n\n');
+}
+function createParagraphsFromText(text) {
+    const lines = text.split('\n');
+    return lines.map(line => {
+        const trimmedLine = line.trim();
+
+        const isBold = trimmedLine.startsWith('7.') || trimmedLine.startsWith('ALL') || trimmedLine === trimmedLine.toUpperCase();
+        const isBullet = /^\d+\./.test(trimmedLine) || /^\(\w+\)/.test(trimmedLine);
+        const isItalic = trimmedLine.startsWith('_') && trimmedLine.endsWith('_');
+
+        const textRun = new TextRun({
+            text: trimmedLine.replace(/^[-•*]\s*/, ''),
+            bold: isBold,
+            italics: isItalic,
+            size: 24,
+        });
+
+        return new Paragraph({
+            children: [textRun],
+            bullet: isBullet ? { level: 0 } : undefined,
+        });
+    });
+}
 
 app.get('/', (req, res) => {
-    console.log('GET / - Rendering index page');
     res.render('index', { docxFile: null });
 });
 
 app.post('/upload', upload.single('image'), async (req, res) => {
-    console.log('POST /upload - Received image upload');
     const imagePath = req.file.path;
-    const outputFileName = `extracted_${Date.now()}.docx`;
-    const imageBytes = fs.readFileSync(imagePath);
+    const randomNumber = Math.floor(Math.random() * 1000000);
+    const outputFileName = `File:${randomNumber}.docx`;
 
     try {
-        console.log('POST /upload - Sending image to Textract for processing');
-        const command = new DetectDocumentTextCommand({ Document: { Bytes: imageBytes } });
-        const data = await client.send(command);
+        const imageBytes = fs.readFileSync(imagePath);
 
-        console.log('POST /upload - Textract response received');
-        const text = data.Blocks.filter(block => block.BlockType === 'LINE')
+        const command = new DetectDocumentTextCommand({
+            Document: {
+                Bytes: imageBytes,
+            },
+        });
+
+        const textractResult = await textractClient.send(command);
+
+        let text = textractResult.Blocks
+            .filter(block => block.BlockType === 'LINE')
             .map(block => block.Text)
             .join('\n');
 
-        console.log('POST /upload - Extracted text:', text);
+        text = formatText(text);
 
-        const lines = text.split('\n').map(line => {
-            return new Paragraph({
-                children: [
-                    new TextRun({
-                        text: line,
-                        font: 'Arial',
-                        size: 24,
-                    }),
-                ],
-            });
-        });
-
+        const paragraphs = createParagraphsFromText(text);
         const doc = new Document({
             sections: [
                 {
                     properties: {},
-                    children: lines,
+                    children: paragraphs,
                 },
             ],
         });
 
         const buffer = await Packer.toBuffer(doc);
-        const docxPath = path.join('uploads', outputFileName);
-        fs.writeFileSync(docxPath, buffer);
+        const outputDir = path.join(__dirname, 'output');
+        const docxPath = path.join(outputDir, outputFileName);
 
-        console.log(`POST /upload - DOCX file created: ${outputFileName}`);
+        if (!fs.existsSync(outputDir)) {
+            fs.mkdirSync(outputDir);
+        }
+
+        fs.writeFileSync(docxPath, buffer);
+        fs.unlinkSync(imagePath);
+
+        console.log(`Extracting Done: ${outputFileName}`);
         res.render('index', { docxFile: outputFileName });
     } catch (error) {
-        console.error('POST /upload - Error processing image:', error);
+        console.error('Error extracting text:', error);
         res.status(500).send('Error processing image.');
     }
 });
 
 app.get('/download/:filename', (req, res) => {
     const filename = req.params.filename;
-    const filePath = path.join(__dirname, 'uploads', filename);
-    console.log(`GET /download/${filename} - Downloading file`);
+    const filePath = path.join(__dirname, 'output', filename);
     res.download(filePath);
 });
 
