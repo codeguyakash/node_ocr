@@ -3,7 +3,7 @@ const multer = require('multer');
 const path = require('path');
 const fs = require('fs');
 const { TextractClient, DetectDocumentTextCommand } = require('@aws-sdk/client-textract');
-const { Document, Packer, Paragraph, TextRun, AlignmentType, LevelFormat, convertInchesToTwip } = require('docx');
+const { Document, Packer, Paragraph, TextRun, AlignmentType, LevelFormat, HeadingLevel, convertInchesToTwip } = require('docx');
 require('dotenv').config();
 
 const app = express();
@@ -69,29 +69,20 @@ function createParagraphsFromText(text) {
     return lines.map(line => {
         const trimmedLine = line.trim();
 
-        // Detect if the line is part of an existing numbered or lettered list
-        const matchNumbered = trimmedLine.match(/^(\d+)\./);
-        const matchLettered = trimmedLine.match(/^([a-z])\)/i);
-
-        const isBold = /^[A-Z]+\./.test(trimmedLine) || trimmedLine.toUpperCase() === trimmedLine;
-        const level = matchNumbered ? parseInt(matchNumbered[1], 10) - 1 : matchLettered ? matchLettered[1].charCodeAt(0) - 'a'.charCodeAt(0) : 0;
-
-        let numbering;
-        if (matchNumbered) {
-            numbering = { reference: "custom-numbering", level: 0 };
-        } else if (matchLettered) {
-            numbering = { reference: "custom-numbering", level: 1 };
-        }
+        const isBold = /^[\d]+\./.test(trimmedLine) || trimmedLine.toUpperCase() === trimmedLine;
+        const isBullet = /^\d+\./.test(trimmedLine) || /^\(\w+\)/.test(trimmedLine);
+        const isItalic = trimmedLine.startsWith('_') && trimmedLine.endsWith('_');
 
         const textRun = new TextRun({
-            text: trimmedLine,
+            text: trimmedLine.replace(/^[-•*]\s*/, ''),
             bold: isBold,
+            italics: isItalic,
             size: 24,
         });
 
         return new Paragraph({
             children: [textRun],
-            numbering: numbering,
+            bullet: isBullet ? { level: 0 } : undefined,
         });
     });
 }
@@ -138,7 +129,7 @@ app.post('/upload', upload.single('image'), async (req, res) => {
                         levels: [
                             {
                                 level: 0,
-                                format: LevelFormat.DECIMAL,
+                                format: LevelFormat.UPPER_ROMAN,
                                 text: "%1.",
                                 alignment: AlignmentType.START,
                                 style: {
@@ -149,12 +140,61 @@ app.post('/upload', upload.single('image'), async (req, res) => {
                             },
                             {
                                 level: 1,
-                                format: LevelFormat.LOWER_LETTER,
-                                text: "%2)",
+                                format: LevelFormat.DECIMAL,
+                                text: "%2.",
                                 alignment: AlignmentType.START,
                                 style: {
                                     paragraph: {
                                         indent: { left: convertInchesToTwip(1), hanging: convertInchesToTwip(0.25) },
+                                    },
+                                },
+                            },
+                            {
+                                level: 2,
+                                format: LevelFormat.LOWER_LETTER,
+                                text: "%3)",
+                                alignment: AlignmentType.START,
+                                style: {
+                                    paragraph: {
+                                        indent: { left: convertInchesToTwip(1.5), hanging: convertInchesToTwip(0.25) },
+                                    },
+                                },
+                            },
+                        ],
+                    },
+                    {
+                        reference: "custom-bullets",
+                        levels: [
+                            {
+                                level: 0,
+                                format: LevelFormat.BULLET,
+                                text: "•",
+                                alignment: AlignmentType.LEFT,
+                                style: {
+                                    paragraph: {
+                                        indent: { left: convertInchesToTwip(0.5), hanging: convertInchesToTwip(0.25) },
+                                    },
+                                },
+                            },
+                            {
+                                level: 1,
+                                format: LevelFormat.BULLET,
+                                text: "◦",
+                                alignment: AlignmentType.LEFT,
+                                style: {
+                                    paragraph: {
+                                        indent: { left: convertInchesToTwip(1), hanging: convertInchesToTwip(0.25) },
+                                    },
+                                },
+                            },
+                            {
+                                level: 2,
+                                format: LevelFormat.BULLET,
+                                text: "▪",
+                                alignment: AlignmentType.LEFT,
+                                style: {
+                                    paragraph: {
+                                        indent: { left: convertInchesToTwip(1.5), hanging: convertInchesToTwip(0.25) },
                                     },
                                 },
                             },
@@ -177,7 +217,6 @@ app.post('/upload', upload.single('image'), async (req, res) => {
         if (!fs.existsSync(outputDir)) {
             fs.mkdirSync(outputDir);
         }
-
         fs.writeFileSync(docxPath, buffer);
         fs.unlinkSync(imagePath);
 
